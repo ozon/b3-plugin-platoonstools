@@ -1,11 +1,12 @@
 # PlatoonTools Plugin for [B3](http://www.bigbrotherbot.net/ "B3")
 This plugin fetches platoon information from Battlelog.
-B3 now knows clan members and can, for example, automatically assign groups.
+B3 now knows clan members and can automatically assign groups.
 
 ### Features
 
 - detect platoon members and setup client groups
 - Supports multiple platoons
+- Respects member joined date
 
 
 ## Usage

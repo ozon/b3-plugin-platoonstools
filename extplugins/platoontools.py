@@ -24,6 +24,7 @@ from threading import Thread
 import json
 from urllib2 import Request, urlopen, URLError
 from ConfigParser import NoOptionError
+import datetime
 
 __version__ = '0.0.1'
 __author__ = 'ozon'
@@ -36,6 +37,7 @@ class PlatoontoolsPlugin(Plugin):
         'member_group': 'mod',
         'leader_group': 'mod',
         'admin_group': 'admin',
+        'min_member_days': 3,
     }
 
     def onLoadConfig(self):
@@ -52,18 +54,24 @@ class PlatoontoolsPlugin(Plugin):
                 try:
                     self.platoons[section]['settings']['member_group'] = self.config.get(section, 'member_group')
                 except NoOptionError:
-                    self.warning('could not find settings/member_group for platoon id %s in config file, '
+                    self.warning('could not find [platoon_id]/member_group for platoon id %s in config file, '
                                  'using default: %s' % (section, self.default_platoon_settings['member_group']))
                 try:
                     self.platoons[section]['settings']['leader_group'] = self.config.get(section, 'leader_group')
                 except NoOptionError:
-                    self.warning('could not find settings/leader_group for platoon id %s in config file, '
+                    self.warning('could not find [platoon_id]/leader_group for platoon id %s in config file, '
                                  'using default: %s' % (section, self.default_platoon_settings['leader_group']))
                 try:
                     self.platoons[section]['settings']['admin_group'] = self.config.get(section, 'admin_group')
                 except NoOptionError:
-                    self.warning('could not find settings/admin_group for platoon id %s in config file, '
+                    self.warning('could not find [platoon_id]/admin_group for platoon id %s in config file, '
                                  'using default: %s' % (section, self.default_platoon_settings['admin_group']))
+                try:
+                    self.platoons[section]['settings']['min_member_time'] = self.config.getint(section,
+                                                                                               'min_member_days')
+                except NoOptionError:
+                    self.warning('could not find [platoon_id]/min_member_time for platoon id %s in config file, '
+                                 'using default: %s' % (section, self.default_platoon_settings['min_member_time']))
 
         # first platoon update
         self.do_platoon_update()
@@ -93,6 +101,13 @@ class PlatoontoolsPlugin(Plugin):
         """Update the group for the given client"""
         platoon_member = self._get_platoon_member(client)
         if platoon_member:
+            # check join date
+            join_date = datetime.datetime.fromtimestamp(platoon_member['joined']).date()
+            min_member_days = self.platoons[platoon_member['platoon_id']]['settings']['min_member_days']
+            if join_date >= datetime.date.today()-datetime.timedelta(days=min_member_days):
+                self.info('%s does not reach the required member time.' % client.name)
+                return
+
             # get b3 group keyword for the platoon member
             group = Group(keyword=self.platoons[platoon_member['platoon_id']]['settings']['member_group'])
             if platoon_member['is_admin']:
